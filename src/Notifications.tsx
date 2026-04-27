@@ -2,18 +2,36 @@ import * as React from 'react';
 import type { ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import type { CSSMotionProps } from '@rc-component/motion';
-import type { InnerOpenConfig, OpenConfig, Placement, Placements, StackConfig } from './interface';
-import NoticeList from './NoticeList';
+import { useEvent } from '@rc-component/util';
+import NotificationList, {
+  type NotificationClassNames,
+  type NotificationListConfig,
+  type NotificationStyles,
+  type Placement,
+  type StackConfig,
+} from './NotificationList';
+import type { ComponentsType } from './Notification';
 
 export interface NotificationsProps {
+  // Style
   prefixCls?: string;
-  motion?: CSSMotionProps | ((placement: Placement) => CSSMotionProps);
-  container?: HTMLElement | ShadowRoot;
-  maxCount?: number;
+  classNames?: NotificationClassNames;
+  styles?: NotificationStyles;
+  components?: ComponentsType;
   className?: (placement: Placement) => string;
   style?: (placement: Placement) => React.CSSProperties;
+
+  // UI
+  container?: HTMLElement | ShadowRoot;
+  motion?: CSSMotionProps | ((placement: Placement) => CSSMotionProps);
+
+  // Behavior
+  maxCount?: number;
+  pauseOnHover?: boolean;
+  stack?: boolean | StackConfig;
+
+  // Function
   onAllRemoved?: VoidFunction;
-  stack?: StackConfig;
   renderNotifications?: (
     node: ReactElement,
     info: { prefixCls: string; key: React.Key },
@@ -21,56 +39,55 @@ export interface NotificationsProps {
 }
 
 export interface NotificationsRef {
-  open: (config: OpenConfig) => void;
+  open: (config: NotificationListConfig) => void;
   close: (key: React.Key) => void;
   destroy: () => void;
 }
 
-// ant-notification ant-notification-topRight
+// ========================= Types ==========================
+type Placements = Partial<Record<Placement, NotificationListConfig[]>>;
+
 const Notifications = React.forwardRef<NotificationsRef, NotificationsProps>((props, ref) => {
+  // ========================= Props ==========================
   const {
     prefixCls = 'rc-notification',
     container,
     motion,
     maxCount,
+    pauseOnHover,
+    classNames,
+    styles,
+    components,
     className,
     style,
     onAllRemoved,
     stack,
     renderNotifications,
   } = props;
-  const [configList, setConfigList] = React.useState<OpenConfig[]>([]);
 
-  // ======================== Close =========================
-  const onNoticeClose = (key: React.Key) => {
-    // Trigger close event
-    const config = configList.find((item) => item.key === key);
-    const closable = config?.closable;
-    const closableObj = closable && typeof closable === 'object' ? closable : {};
-    const { onClose: closableOnClose } = closableObj;
-    closableOnClose?.();
-    config?.onClose?.();
-    setConfigList((list) => list.filter((item) => item.key !== key));
-  };
+  // ========================= State ==========================
+  const [configList, setConfigList] = React.useState<NotificationListConfig[]>([]);
+  const [placements, setPlacements] = React.useState<Placements>({});
+  const emptyRef = React.useRef(false);
 
-  // ========================= Refs =========================
+  // ========================== Ref ===========================
   React.useImperativeHandle(ref, () => ({
     open: (config) => {
       setConfigList((list) => {
         let clone = [...list];
 
-        // Replace if exist
         const index = clone.findIndex((item) => item.key === config.key);
-        const innerConfig: InnerOpenConfig = { ...config };
+        const innerConfig: NotificationListConfig = { ...config };
+
         if (index >= 0) {
-          innerConfig.times = ((list[index] as InnerOpenConfig)?.times || 0) + 1;
+          innerConfig.times = (list[index]?.times ?? 0) + 1;
           clone[index] = innerConfig;
         } else {
           innerConfig.times = 0;
           clone.push(innerConfig);
         }
 
-        if (maxCount > 0 && clone.length > maxCount) {
+        if (maxCount && maxCount > 0 && clone.length > maxCount) {
           clone = clone.slice(-maxCount);
         }
 
@@ -78,64 +95,56 @@ const Notifications = React.forwardRef<NotificationsRef, NotificationsProps>((pr
       });
     },
     close: (key) => {
-      onNoticeClose(key);
+      setConfigList((list) => list.filter((item) => item.key !== key));
     },
     destroy: () => {
       setConfigList([]);
     },
   }));
 
-  // ====================== Placements ======================
-  const [placements, setPlacements] = React.useState<Placements>({});
-
+  // ======================== Effect =========================
   React.useEffect(() => {
     const nextPlacements: Placements = {};
 
     configList.forEach((config) => {
-      const { placement = 'topRight' } = config;
-
-      if (placement) {
-        nextPlacements[placement] = nextPlacements[placement] || [];
-        nextPlacements[placement].push(config);
-      }
+      const placement = config.placement ?? 'topRight';
+      nextPlacements[placement] = nextPlacements[placement] || [];
+      nextPlacements[placement].push(config);
     });
 
-    // Fill exist placements to avoid empty list causing remove without motion
     Object.keys(placements).forEach((placement) => {
-      nextPlacements[placement] = nextPlacements[placement] || [];
+      nextPlacements[placement as Placement] = nextPlacements[placement as Placement] || [];
     });
 
     setPlacements(nextPlacements);
   }, [configList]);
 
-  // Clean up container if all notices fade out
-  const onAllNoticeRemoved = (placement: Placement) => {
+  // ======================== Callback =======================
+  const onAllNoticeRemoved = useEvent((placement: Placement) => {
     setPlacements((originPlacements) => {
       const clone = {
         ...originPlacements,
       };
-      const list = clone[placement] || [];
 
-      if (!list.length) {
+      if (!(clone[placement] || []).length) {
         delete clone[placement];
       }
 
       return clone;
     });
-  };
+  });
 
-  // Effect tell that placements is empty now
-  const emptyRef = React.useRef(false);
+  // ======================== Effect =========================
   React.useEffect(() => {
     if (Object.keys(placements).length > 0) {
       emptyRef.current = true;
     } else if (emptyRef.current) {
-      // Trigger only when from exist to empty
       onAllRemoved?.();
       emptyRef.current = false;
     }
-  }, [placements]);
-  // ======================== Render ========================
+  }, [placements, onAllRemoved]);
+
+  // ======================== Render =========================
   if (!container) {
     return null;
   }
@@ -145,25 +154,31 @@ const Notifications = React.forwardRef<NotificationsRef, NotificationsProps>((pr
   return createPortal(
     <>
       {placementList.map((placement) => {
-        const placementConfigList = placements[placement];
-
         const list = (
-          <NoticeList
+          <NotificationList
             key={placement}
-            configList={placementConfigList}
+            configList={placements[placement]}
             placement={placement}
             prefixCls={prefixCls}
+            pauseOnHover={pauseOnHover}
+            classNames={classNames}
+            styles={styles}
+            components={components}
             className={className?.(placement)}
             style={style?.(placement)}
             motion={motion}
-            onNoticeClose={onNoticeClose}
-            onAllNoticeRemoved={onAllNoticeRemoved}
             stack={stack}
+            onNoticeClose={(key) => {
+              setConfigList((oriList) => oriList.filter((item) => item.key !== key));
+            }}
+            onAllRemoved={onAllNoticeRemoved}
           />
         );
 
         return renderNotifications
-          ? renderNotifications(list, { prefixCls, key: placement })
+          ? React.cloneElement(renderNotifications(list, { prefixCls, key: placement }), {
+              key: placement,
+            })
           : list;
       })}
     </>,

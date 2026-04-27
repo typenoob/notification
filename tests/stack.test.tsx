@@ -16,7 +16,7 @@ describe('stack', () => {
             type="button"
             onClick={() => {
               api.open({
-                content: <div className="context-content">Test</div>,
+                description: <div className="context-content">Test</div>,
                 duration: false,
               });
             }}
@@ -40,7 +40,7 @@ describe('stack', () => {
     expect(document.querySelectorAll('.rc-notification-notice')).toHaveLength(5);
     expect(document.querySelector('.rc-notification-stack-expanded')).toBeFalsy();
 
-    fireEvent.mouseEnter(document.querySelector('.rc-notification-notice'));
+    fireEvent.mouseEnter(document.querySelector('.rc-notification-list'));
     expect(document.querySelector('.rc-notification-stack-expanded')).toBeTruthy();
   });
 
@@ -55,7 +55,7 @@ describe('stack', () => {
             type="button"
             onClick={() => {
               api.open({
-                content: <div className="context-content">Test</div>,
+                description: <div className="context-content">Test</div>,
                 duration: false,
                 closable: true,
               });
@@ -74,16 +74,14 @@ describe('stack', () => {
     expect(document.querySelector('.rc-notification-stack')).toBeTruthy();
     expect(document.querySelector('.rc-notification-stack-expanded')).toBeFalsy();
 
-    fireEvent.mouseEnter(document.querySelector('.rc-notification-notice'));
+    fireEvent.mouseEnter(document.querySelector('.rc-notification-list'));
     expect(document.querySelector('.rc-notification-stack-expanded')).toBeTruthy();
 
     fireEvent.click(document.querySelector('.rc-notification-notice-close'));
     expect(document.querySelectorAll('.rc-notification-notice')).toHaveLength(4);
     expect(document.querySelector('.rc-notification-stack-expanded')).toBeTruthy();
 
-    // mouseleave will not triggerred if notice is closed
-    fireEvent.mouseEnter(document.querySelector('.rc-notification-notice-wrapper'));
-    fireEvent.mouseLeave(document.querySelector('.rc-notification-notice-wrapper'));
+    fireEvent.mouseLeave(document.querySelector('.rc-notification-list'));
     expect(document.querySelector('.rc-notification-stack-expanded')).toBeFalsy();
   });
 });

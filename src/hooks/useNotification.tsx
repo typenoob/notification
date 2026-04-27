@@ -1,36 +1,27 @@
-import type { CSSMotionProps } from '@rc-component/motion';
-import * as React from 'react';
-import type { NotificationsProps, NotificationsRef } from '../Notifications';
-import Notifications from '../Notifications';
-import type { OpenConfig, Placement, StackConfig } from '../interface';
 import { useEvent } from '@rc-component/util';
+import * as React from 'react';
+import Notifications, { type NotificationsProps, type NotificationsRef } from '../Notifications';
+import type { NotificationListConfig } from '../NotificationList';
+import type { Placement } from '../NotificationList';
 
 const defaultGetContainer = () => document.body;
 
-type OptionalConfig = Partial<OpenConfig>;
+// ========================= Types ==========================
+type OptionalConfig = Partial<NotificationListConfig>;
+type SharedConfig = Pick<
+  NotificationListConfig,
+  'placement' | 'closable' | 'duration' | 'showProgress'
+>;
 
-export interface NotificationConfig {
-  prefixCls?: string;
-  /** Customize container. It will repeat call which means you should return same container element. */
+export interface NotificationConfig extends Omit<NotificationsProps, 'container'> {
+  // UI
+  placement?: Placement;
   getContainer?: () => HTMLElement | ShadowRoot;
-  motion?: CSSMotionProps | ((placement: Placement) => CSSMotionProps);
 
-  closable?:
-    | boolean
-    | ({ closeIcon?: React.ReactNode; onClose?: VoidFunction } & React.AriaAttributes);
-  maxCount?: number;
+  // Behavior
+  closable?: NotificationListConfig['closable'];
   duration?: number | false | null;
-  showProgress?: boolean;
-  pauseOnHover?: boolean;
-  /** @private. Config for notification holder style. Safe to remove if refactor */
-  className?: (placement: Placement) => string;
-  /** @private. Config for notification holder style. Safe to remove if refactor */
-  style?: (placement: Placement) => React.CSSProperties;
-  /** @private Trigger when all the notification closed. */
-  onAllRemoved?: VoidFunction;
-  stack?: StackConfig;
-  /** @private Slot for style in Notifications */
-  renderNotifications?: NotificationsProps['renderNotifications'];
+  showProgress?: NotificationListConfig['showProgress'];
 }
 
 export interface NotificationAPI {
@@ -41,7 +32,7 @@ export interface NotificationAPI {
 
 interface OpenTask {
   type: 'open';
-  config: OpenConfig;
+  config: NotificationListConfig;
 }
 
 interface CloseTask {
@@ -55,18 +46,19 @@ interface DestroyTask {
 
 type Task = OpenTask | CloseTask | DestroyTask;
 
+// ======================== Helper ==========================
 let uniqueKey = 0;
 
 function mergeConfig<T>(...objList: Partial<T>[]): T {
-  const clone: T = {} as T;
+  const clone = {} as T;
 
   objList.forEach((obj) => {
     if (obj) {
       Object.keys(obj).forEach((key) => {
-        const val = obj[key];
+        const value = obj[key as keyof T];
 
-        if (val !== undefined) {
-          clone[key] = val;
+        if (value !== undefined) {
+          clone[key as keyof T] = value;
         }
       });
     }
@@ -75,24 +67,45 @@ function mergeConfig<T>(...objList: Partial<T>[]): T {
   return clone;
 }
 
+/**
+ * Creates the notification API and the React holder element.
+ * Queueing is handled internally until the notification instance is ready.
+ */
 export default function useNotification(
   rootConfig: NotificationConfig = {},
 ): [NotificationAPI, React.ReactElement] {
+  // ========================= Config =========================
   const {
     getContainer = defaultGetContainer,
     motion,
     prefixCls,
+    placement,
+    closable,
+    duration,
+    showProgress,
+    pauseOnHover,
+    classNames,
+    styles,
+    components,
     maxCount,
     className,
     style,
     onAllRemoved,
     stack,
     renderNotifications,
-    ...shareConfig
   } = rootConfig;
+  const shareConfig: SharedConfig = {
+    placement,
+    closable,
+    duration,
+    showProgress,
+  };
 
+  // ========================= Holder =========================
   const [container, setContainer] = React.useState<HTMLElement | ShadowRoot>();
-  const notificationsRef = React.useRef<NotificationsRef>();
+  const notificationsRef = React.useRef<NotificationsRef | null>(null);
+  const [taskQueue, setTaskQueue] = React.useState<Task[]>([]);
+
   const contextHolder = (
     <Notifications
       container={container}
@@ -100,6 +113,10 @@ export default function useNotification(
       prefixCls={prefixCls}
       motion={motion}
       maxCount={maxCount}
+      pauseOnHover={pauseOnHover}
+      classNames={classNames}
+      styles={styles}
+      components={components}
       className={className}
       style={style}
       onAllRemoved={onAllRemoved}
@@ -108,10 +125,10 @@ export default function useNotification(
     />
   );
 
-  const [taskQueue, setTaskQueue] = React.useState<Task[]>([]);
-
+  // ========================== API ==========================
   const open = useEvent<NotificationAPI['open']>((config) => {
-    const mergedConfig = mergeConfig(shareConfig, config);
+    const mergedConfig = mergeConfig<NotificationListConfig>(shareConfig, config);
+
     if (mergedConfig.key === null || mergedConfig.key === undefined) {
       mergedConfig.key = `rc-notification-${uniqueKey}`;
       uniqueKey += 1;
@@ -120,10 +137,9 @@ export default function useNotification(
     setTaskQueue((queue) => [...queue, { type: 'open', config: mergedConfig }]);
   });
 
-  // ========================= Refs =========================
   const api = React.useMemo<NotificationAPI>(
     () => ({
-      open: open,
+      open,
       close: (key) => {
         setTaskQueue((queue) => [...queue, { type: 'close', key }]);
       },
@@ -134,56 +150,38 @@ export default function useNotification(
     [],
   );
 
-  // ======================= Container ======================
+  // ======================== Effect =========================
   // React 18 should all in effect that we will check container in each render
   // Which means getContainer should be stable.
   React.useEffect(() => {
     setContainer(getContainer());
   });
 
-  // ======================== Effect ========================
   React.useEffect(() => {
     // Flush task when node ready
     if (notificationsRef.current && taskQueue.length) {
       taskQueue.forEach((task) => {
         switch (task.type) {
           case 'open':
-            notificationsRef.current.open(task.config);
+            notificationsRef.current?.open(task.config);
             break;
-
           case 'close':
-            notificationsRef.current.close(task.key);
+            notificationsRef.current?.close(task.key);
             break;
-
           case 'destroy':
-            notificationsRef.current.destroy();
+            notificationsRef.current?.destroy();
             break;
         }
       });
 
-      // https://github.com/ant-design/ant-design/issues/52590
-      // React `startTransition` will run once `useEffect` but many times `setState`,
-      // So `setTaskQueue` with filtered array will cause infinite loop.
-      // We cache the first match queue instead.
-      let oriTaskQueue: Task[];
-      let tgtTaskQueue: Task[];
+      setTaskQueue((originQueue) => {
+        const targetTaskQueue = originQueue.filter((task) => !taskQueue.includes(task));
 
-      // React 17 will mix order of effect & setState in async
-      // - open: setState[0]
-      // - effect[0]
-      // - open: setState[1]
-      // - effect setState([]) * here will clean up [0, 1] in React 17
-      setTaskQueue((oriQueue) => {
-        if (oriTaskQueue !== oriQueue || !tgtTaskQueue) {
-          oriTaskQueue = oriQueue;
-          tgtTaskQueue = oriQueue.filter((task) => !taskQueue.includes(task));
-        }
-
-        return tgtTaskQueue;
+        return targetTaskQueue.length === originQueue.length ? originQueue : targetTaskQueue;
       });
     }
   }, [taskQueue]);
 
-  // ======================== Return ========================
+  // ======================== Return =========================
   return [api, contextHolder];
 }

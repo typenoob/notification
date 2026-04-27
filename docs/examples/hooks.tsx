@@ -1,21 +1,32 @@
 /* eslint-disable no-console */
 import React from 'react';
+import type { CSSMotionProps } from '@rc-component/motion';
 import '../../assets/index.less';
 import { useNotification } from '../../src';
-import motion from './motion';
+
+const motion: CSSMotionProps = {
+  motionName: 'rc-notification-fade',
+  motionAppear: true,
+  motionEnter: true,
+  motionLeave: true,
+};
 
 const App = () => {
-  const [notice, contextHolder] = useNotification({ motion, closable: true });
+  const [notice, contextHolder] = useNotification({
+    motion,
+    closable: true,
+  });
 
   return (
     <>
-      <div>
-        <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {/* Default */}
           <button
+            type="button"
             onClick={() => {
               notice.open({
-                content: `${new Date().toISOString()}`,
+                description: `${new Date().toISOString()}`,
               });
             }}
           >
@@ -24,9 +35,10 @@ const App = () => {
 
           {/* Not Close */}
           <button
+            type="button"
             onClick={() => {
               notice.open({
-                content: `${Array(Math.round(Math.random() * 5) + 1)
+                description: `${Array(Math.round(Math.random() * 5) + 1)
                   .fill(1)
                   .map(() => new Date().toISOString())
                   .join('\n')}`,
@@ -34,14 +46,15 @@ const App = () => {
               });
             }}
           >
-            Not Auto Close
+            Not Auto Close (Random)
           </button>
 
           {/* Not Close */}
           <button
+            type="button"
             onClick={() => {
               notice.open({
-                content: `${Array(5)
+                description: `${Array(5)
                   .fill(1)
                   .map(() => new Date().toISOString())
                   .join('\n')}`,
@@ -49,16 +62,17 @@ const App = () => {
               });
             }}
           >
-            Not Auto Close
+            Not Auto Close (5 Items)
           </button>
         </div>
 
-        <div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {/* No Closable */}
           <button
+            type="button"
             onClick={() => {
               notice.open({
-                content: `No Close! ${new Date().toISOString()}`,
+                description: `No Close! ${new Date().toISOString()}`,
                 duration: null,
                 closable: false,
                 key: 'No Close',
@@ -73,6 +87,7 @@ const App = () => {
 
           {/* Force Close */}
           <button
+            type="button"
             onClick={() => {
               notice.close('No Close');
             }}
@@ -80,17 +95,18 @@ const App = () => {
             Force Close No Closable
           </button>
         </div>
-      </div>
 
-      <div>
-        {/* Destroy All */}
-        <button
-          onClick={() => {
-            notice.destroy();
-          }}
-        >
-          Destroy All
-        </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {/* Destroy All */}
+          <button
+            type="button"
+            onClick={() => {
+              notice.destroy();
+            }}
+          >
+            Destroy All
+          </button>
+        </div>
       </div>
 
       {contextHolder}

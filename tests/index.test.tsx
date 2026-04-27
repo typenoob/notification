@@ -1,8 +1,8 @@
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
-import type { NotificationAPI, NotificationConfig } from '../src';
-import { useNotification } from '../src';
+import type { NotificationAPI, NotificationConfig, NotificationProgressProps } from '../src';
+import { Notification, useNotification } from '../src';
 
 require('../assets/index.less');
 
@@ -37,7 +37,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
         duration: 0.1,
       });
     });
@@ -56,7 +56,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
         closable: {
           closeIcon: <span className="test-icon">test-close-icon</span>,
         },
@@ -73,13 +73,13 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
         duration: 0.1,
       });
     });
     act(() => {
       instance.open({
-        content: <p className="test">2</p>,
+        description: <p className="test">2</p>,
         duration: 0.1,
       });
     });
@@ -97,7 +97,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p id="test" className="test">
             222222
           </p>
@@ -126,7 +126,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p id="test" className="test">
             222222
           </p>
@@ -154,7 +154,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p className="test">
             <button type="button" id="closeButton" onClick={() => close(key)}>
               close
@@ -187,7 +187,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p id="not-updatable" className="not-updatable">
             {notUpdatableValue}
           </p>
@@ -198,7 +198,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p id="updatable" className="updatable">
             {value}
           </p>
@@ -213,7 +213,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p id="updatable" className="updatable">
             {newValue}
           </p>
@@ -244,7 +244,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p id="freeze" className="freeze">
             freeze
           </p>
@@ -277,7 +277,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
       });
     });
 
@@ -315,7 +315,7 @@ describe('Notification.Basic', () => {
 
       act(() => {
         instance.open({
-          content: (
+          description: (
             <p id="not-freeze" className="not-freeze">
               not freeze
             </p>
@@ -343,7 +343,7 @@ describe('Notification.Basic', () => {
 
       act(() => {
         instance.open({
-          content: <p className="test">1</p>,
+          description: <p className="test">1</p>,
         });
       });
 
@@ -386,7 +386,7 @@ describe('Notification.Basic', () => {
       // First
       act(() => {
         instance.open({
-          content: <div className="max-count">bamboo</div>,
+          description: <div className="max-count">bamboo</div>,
           key: 'bamboo',
           duration: 0,
         });
@@ -395,7 +395,7 @@ describe('Notification.Basic', () => {
       // Next
       act(() => {
         instance.open({
-          content: <div className="max-count">bamboo</div>,
+          description: <div className="max-count">bamboo</div>,
           key: 'bamboo',
           duration: 0,
         });
@@ -416,21 +416,21 @@ describe('Notification.Basic', () => {
       const value = 'updated last';
       act(() => {
         instance.open({
-          content: <span className="test-maxcount">simple show</span>,
+          description: <span className="test-maxcount">simple show</span>,
           duration: 0,
         });
       });
 
       act(() => {
         instance.open({
-          content: <span className="test-maxcount">simple show</span>,
+          description: <span className="test-maxcount">simple show</span>,
           duration: 0,
         });
       });
 
       act(() => {
         instance.open({
-          content: <span className="test-maxcount">{value}</span>,
+          description: <span className="test-maxcount">{value}</span>,
           duration: 0,
         });
       });
@@ -450,7 +450,7 @@ describe('Notification.Basic', () => {
 
       act(() => {
         instance.open({
-          content: <span className="auto-remove">bamboo</span>,
+          description: <span className="auto-remove">bamboo</span>,
           duration: 99,
         });
       });
@@ -458,7 +458,7 @@ describe('Notification.Basic', () => {
 
       act(() => {
         instance.open({
-          content: <span className="auto-remove">light</span>,
+          description: <span className="auto-remove">light</span>,
           duration: 0.5,
         });
       });
@@ -482,7 +482,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: (
+        description: (
           <p className="test">
             <button type="button" id="closeButton" onClick={close.bind(null, key)}>
               close
@@ -508,7 +508,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
         closable: true,
         onClick: () => {
           clickCount += 1;
@@ -529,7 +529,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <span className="test-data-attributes">simple show</span>,
+        description: <span className="test-data-attributes">simple show</span>,
         duration: 3,
         className: 'notice-class',
         props: {
@@ -551,7 +551,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <span className="test-aria-attributes">simple show</span>,
+        description: <span className="test-aria-attributes">simple show</span>,
         duration: 3,
         className: 'notice-class',
         props: {
@@ -572,7 +572,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <span className="test-aria-attributes">simple show</span>,
+        description: <span className="test-aria-attributes">simple show</span>,
         duration: 3,
         className: 'notice-class',
         props: { role: 'alert' },
@@ -618,11 +618,65 @@ describe('Notification.Basic', () => {
     expect(document.querySelector('.rc-notification-notice')).toHaveClass('bamboo');
   });
 
+  it('should support zero offset', () => {
+    const { container, rerender } = render(
+      <Notification prefixCls="rc-notification" description="little" offset={10} />,
+    );
+
+    expect(container.querySelector('.rc-notification-notice')).toHaveStyle({
+      '--notification-y': '10px',
+    });
+
+    rerender(<Notification prefixCls="rc-notification" description="little" offset={0} />);
+
+    expect(container.querySelector('.rc-notification-notice')).toHaveStyle({
+      '--notification-y': '0px',
+    });
+  });
+
+  it('should not render section for single content node', () => {
+    const { instance } = renderDemo();
+
+    act(() => {
+      instance.open({
+        description: 'little',
+      });
+    });
+
+    expect(document.querySelector('.rc-notification-notice-section')).toBeFalsy();
+    expect(document.querySelector('.rc-notification-notice-description')).toBeTruthy();
+  });
+
+  it('should render section when title and description both exist', () => {
+    const { instance } = renderDemo();
+
+    act(() => {
+      instance.open({
+        title: 'bamboo',
+        description: 'little',
+        styles: {
+          section: {
+            content: 'light',
+          },
+        },
+        classNames: {
+          section: 'section-class',
+        },
+      });
+    });
+
+    expect(document.querySelector('.rc-notification-notice-section')).toHaveStyle({
+      content: 'light',
+    });
+    expect(document.querySelector('.rc-notification-notice-section')).toHaveClass('section-class');
+  });
+
   it('should open styles and classNames work', () => {
     const { instance } = renderDemo();
 
     act(() => {
       instance.open({
+        icon: <span />,
         styles: {
           wrapper: {
             content: 'little',
@@ -634,10 +688,10 @@ describe('Notification.Basic', () => {
       });
     });
 
-    expect(document.querySelector('.rc-notification-notice-wrapper')).toHaveStyle({
+    expect(document.querySelector('.bamboo')).toHaveStyle({
       content: 'little',
     });
-    expect(document.querySelector('.rc-notification-notice-wrapper')).toHaveClass('bamboo');
+    expect(document.querySelector('.bamboo')).toHaveClass('bamboo');
   });
 
   it('should className work', () => {
@@ -650,6 +704,28 @@ describe('Notification.Basic', () => {
     });
 
     expect(document.querySelector('.bamboo-topRight')).toBeTruthy();
+  });
+
+  it('should listContent styles and classNames work', () => {
+    const { instance } = renderDemo({
+      classNames: {
+        listContent: 'bamboo',
+      },
+      styles: {
+        listContent: {
+          content: 'little',
+        },
+      },
+    });
+
+    act(() => {
+      instance.open({});
+    });
+
+    expect(document.querySelector('.rc-notification-list-content')).toHaveStyle({
+      content: 'little',
+    });
+    expect(document.querySelector('.rc-notification-list-content')).toHaveClass('bamboo');
   });
 
   it('placement', () => {
@@ -747,14 +823,14 @@ describe('Notification.Basic', () => {
               api.open({
                 key: 'little',
                 duration: 1,
-                content: <div className="context-content">light</div>,
+                description: <div className="context-content">light</div>,
               });
 
               setTimeout(() => {
                 api.open({
                   key: 'little',
                   duration: 1,
-                  content: <div className="context-content">bamboo</div>,
+                  description: <div className="context-content">bamboo</div>,
                   onClose,
                 });
               }, 1100);
@@ -791,7 +867,7 @@ describe('Notification.Basic', () => {
                 api.open({
                   key: 'little',
                   duration: 1,
-                  content: <div className="context-content">light</div>,
+                  description: <div className="context-content">light</div>,
                   closable: { onClose },
                 });
               }}
@@ -823,7 +899,7 @@ describe('Notification.Basic', () => {
                 api.open({
                   key: 'little',
                   duration: 1,
-                  content: <div className="context-content">light</div>,
+                  description: <div className="context-content">light</div>,
                   onClose,
                   closable: { onClose: closableOnClose },
                 });
@@ -856,7 +932,7 @@ describe('Notification.Basic', () => {
                 api.open({
                   key: 'little',
                   duration: 1,
-                  content: <div className="context-content">light</div>,
+                  description: <div className="context-content">light</div>,
                 });
               }}
             />
@@ -876,13 +952,13 @@ describe('Notification.Basic', () => {
     });
   });
 
-  it('closes via keyboard Enter key', () => {
+  it('closes via close button click', () => {
     const { instance } = renderDemo();
     let closeCount = 0;
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
         closable: true,
         onClose: () => {
           closeCount += 1;
@@ -890,7 +966,7 @@ describe('Notification.Basic', () => {
       });
     });
 
-    fireEvent.keyDown(document.querySelector('.rc-notification-notice-close'), { key: 'Enter' }); // origin latest
+    fireEvent.click(document.querySelector('.rc-notification-notice-close')); // origin latest
     expect(closeCount).toEqual(1);
   });
 
@@ -905,7 +981,7 @@ describe('Notification.Basic', () => {
 
     act(() => {
       instance.open({
-        content: <p className="test">1</p>,
+        description: <p className="test">1</p>,
         duration: 0,
       });
     });
@@ -928,7 +1004,7 @@ describe('Notification.Basic', () => {
 
       act(() => {
         instance.open({
-          content: <p className="test">1</p>,
+          description: <p className="test">1</p>,
         });
       });
 
@@ -945,6 +1021,28 @@ describe('Notification.Basic', () => {
       });
 
       expect(document.querySelector('.rc-notification-notice-progress')).toBeFalsy();
+    });
+
+    it('supports custom progress component', () => {
+      const CustomProgress: React.FC<NotificationProgressProps> = ({ className }) => (
+        <span className={className} />
+      );
+
+      const { instance } = renderDemo({
+        components: {
+          progress: CustomProgress,
+        },
+        duration: 1,
+        showProgress: true,
+      });
+
+      act(() => {
+        instance.open({
+          description: <p className="test">1</p>,
+        });
+      });
+
+      expect(document.querySelector('span.rc-notification-notice-progress')).toBeTruthy();
     });
   });
 
@@ -963,7 +1061,7 @@ describe('Notification.Basic', () => {
               data-testid="show-notification"
               onClick={() => {
                 api.open({
-                  content: `Test Notification`,
+                  description: `Test Notification`,
                 });
               }}
             >
@@ -1000,7 +1098,7 @@ describe('Notification.Basic', () => {
             data-testid="show-notification"
             onClick={() => {
               api.open({
-                content: `Test Notification`,
+                description: `Test Notification`,
                 closable: { 'aria-label': 'xxx' },
               });
             }}

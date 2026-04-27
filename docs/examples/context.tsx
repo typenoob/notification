@@ -1,13 +1,20 @@
 /* eslint-disable no-console */
 import React from 'react';
+import type { CSSMotionProps } from '@rc-component/motion';
 import '../../assets/index.less';
 import { useNotification } from '../../src';
-import motion from './motion';
+
+const motion: CSSMotionProps = {
+  motionName: 'rc-notification-fade',
+  motionAppear: true,
+  motionEnter: true,
+  motionLeave: true,
+};
 
 const Context = React.createContext({ name: 'light' });
 
 const NOTICE = {
-  content: <span>simple show</span>,
+  description: <span>simple show</span>,
   onClose() {
     console.log('simple close');
   },
@@ -15,7 +22,9 @@ const NOTICE = {
 };
 
 const Demo = () => {
-  const [{ open }, holder] = useNotification({ motion });
+  const [{ open }, holder] = useNotification({
+    motion,
+  });
 
   return (
     <Context.Provider value={{ name: 'bamboo' }}>
@@ -24,7 +33,7 @@ const Demo = () => {
         onClick={() => {
           open({
             ...NOTICE,
-            content: <Context.Consumer>{({ name }) => `Hi ${name}!`}</Context.Consumer>,
+            description: <Context.Consumer>{({ name }) => `Hi ${name}!`}</Context.Consumer>,
             props: {
               'data-testid': 'my-data-testid',
             },

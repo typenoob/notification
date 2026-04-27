@@ -1,18 +1,28 @@
 /* eslint-disable no-console */
 import React from 'react';
+import type { CSSMotionProps } from '@rc-component/motion';
 import '../../assets/index.less';
 import { useNotification } from '../../src';
-import motion from './motion';
+
+const motion: CSSMotionProps = {
+  motionName: 'rc-notification-fade',
+  motionAppear: true,
+  motionEnter: true,
+  motionLeave: true,
+};
 
 export default () => {
-  const [notice, contextHolder] = useNotification({ motion, showProgress: true });
+  const [notice, contextHolder] = useNotification({
+    motion,
+    showProgress: true,
+  });
 
   return (
     <>
       <button
         onClick={() => {
           notice.open({
-            content: `${new Date().toISOString()}`,
+            description: `${new Date().toISOString()}`,
           });
         }}
       >
@@ -21,7 +31,7 @@ export default () => {
       <button
         onClick={() => {
           notice.open({
-            content: `${new Date().toISOString()}`,
+            description: `${new Date().toISOString()}`,
             pauseOnHover: false,
           });
         }}
